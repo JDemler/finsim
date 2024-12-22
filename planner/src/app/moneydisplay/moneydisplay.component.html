@@ -1,0 +1,39 @@
+<div class="moneydisplay">
+  <div class="moneydisplay-item">
+    <h2>Initial Money</h2>
+    <input type="number" [(ngModel)]="totalMoney" (ngModelChange)="onInputChange()" step="100" />
+    <p>{{ totalMoney | currency:'EUR':'symbol':'1.2-2'}}</p>
+  </div>
+
+  <div class="moneydisplay-interestrate">
+    <h2>Interest Rate</h2>
+    <input type="number" [(ngModel)]="interestRate" (ngModelChange)="onInputChange()" step="0.01" />
+    <p>{{ interestRate | percent:'1.0-2' }}</p>
+  </div>
+
+  <div class="plans-section">
+    <h2>Plans</h2>
+    <div class="plan-buttons">
+      <button (click)="addPlan('savings')">Add Savings Plan</button>
+      <button (click)="addPlan('withdrawal')">Add Withdrawal Plan</button>
+      <button (click)="addPlan('salary')">Add Salary</button>
+    </div>
+
+    <div class="plan-list">
+      <app-plan *ngFor="let plan of plans"
+                [plan]="plan"
+                (planChange)="onPlanChange($event)"
+                (removePlan)="removePlan($event)">
+      </app-plan>
+    </div>
+  </div>
+
+  <div class="chart-container">
+    <canvas baseChart
+      [type]="lineChartType"
+      [data]="lineChartData"
+      [options]="lineChartOptions">
+    </canvas>
+  </div>
+</div>
+

@@ -1,0 +1,60 @@
+.plan-item
+  background: white
+  border-radius: 8px
+  padding: 20px
+  margin-bottom: 15px
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1)
+  border-left: 4px solid #ddd
+
+  &:has([data-type="savings"])
+    border-left-color: #4CAF50
+
+  &:has([data-type="withdrawal"])
+    border-left-color: #FF9800
+
+  &:has([data-type="salary"])
+    border-left-color: #2196F3
+
+  h3
+    color: #2c3e50
+    margin: 0 0 15px 0
+    font-size: 1.2em
+
+  .plan-type
+    font-size: 0.9em
+    color: #666
+    margin-bottom: 15px
+
+  .input-group
+    margin-bottom: 15px
+    display: flex
+    align-items: center
+    gap: 10px
+
+    label
+      min-width: 140px
+      color: #666
+
+    input
+      padding: 8px
+      border: 1px solid #ddd
+      border-radius: 4px
+      width: 120px
+
+      &:focus
+        outline: none
+        border-color: #2196F3
+        box-shadow: 0 0 0 2px rgba(33,150,243,0.1)
+
+  .remove-plan
+    background: #dc3545
+    color: white
+    border: none
+    padding: 8px 16px
+    border-radius: 4px
+    cursor: pointer
+    margin-top: 10px
+    transition: background 0.2s ease
+
+    &:hover
+      background: darken(#dc3545, 10%)

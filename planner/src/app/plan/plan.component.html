@@ -1,0 +1,37 @@
+<div class="plan-item">
+  <h3>{{ plan.type === 'savings' ? 'Savings' : plan.type === 'withdrawal' ? 'Withdrawal' : 'Salary' }} Plan</h3>
+
+  <div class="input-group">
+    <label>{{ inputLabel }}</label>
+    <input type="number"
+           [(ngModel)]="plan.amount"
+           (ngModelChange)="onInputChange()"
+           [step]="stepValue" />
+  </div>
+
+  <div class="input-group" *ngIf="plan.type === 'salary'">
+    <label>Yearly Increase (%):</label>
+    <input type="number"
+           [(ngModel)]="plan.yearlyIncrease"
+           (ngModelChange)="onInputChange()"
+           step="0.1" />
+  </div>
+
+  <div class="input-group">
+    <label>Start from Year:</label>
+    <input type="number"
+           [(ngModel)]="plan.startYear"
+           (ngModelChange)="onInputChange()"
+           min="0" max="25" />
+  </div>
+
+  <div class="input-group">
+    <label>Duration (years):</label>
+    <input type="number"
+           [(ngModel)]="plan.duration"
+           (ngModelChange)="onInputChange()"
+           min="1" max="25" />
+  </div>
+
+  <button class="remove-plan" (click)="onRemove()">Remove Plan</button>
+</div>
