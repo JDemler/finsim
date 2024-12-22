@@ -42,6 +42,14 @@ export class MoneydisplayComponent {
         pointBackgroundColor: 'rgba(255,140,0,1)',
         tension: 0.5,
         yAxisID: 'cashflow'
+      },
+      {
+        data: [],
+        label: 'Net Investments',
+        borderColor: 'rgba(156,39,176,1)',
+        pointBackgroundColor: 'rgba(156,39,176,1)',
+        tension: 0.5,
+        yAxisID: 'cashflow'
       }
     ],
     labels: []
@@ -88,10 +96,11 @@ export class MoneydisplayComponent {
     this.plans.push({
       id: this.nextPlanId++,
       type,
-      amount: type === 'withdrawal' ? 4 : 1000, // Default €1000 for salary/savings, 4% for withdrawal
+      amount: type === 'withdrawal' ? 4 : 1000,
+      isPercentage: false,
       startYear: 0,
       duration: 10,
-      yearlyIncrease: type === 'salary' ? 2 : undefined // 2% default increase for salary
+      yearlyIncrease: type === 'salary' ? 2 : undefined
     });
     this.calculateProjections();
   }
@@ -105,6 +114,7 @@ export class MoneydisplayComponent {
     const withoutPlans = [];
     const withPlans = [];
     const cashFlow = [];
+    const netInvestments = [];
     let baseAmount = this.totalMoney;
     let plannedAmount = this.totalMoney;
 
@@ -112,53 +122,72 @@ export class MoneydisplayComponent {
     this.lineChartData.datasets[0].data = [];
     this.lineChartData.datasets[1].data = [];
     this.lineChartData.datasets[2].data = [];
+    this.lineChartData.datasets[3].data = [];
     this.lineChartData.labels = [];
 
     // Calculate for next 25 years
     for (let year = 0; year <= 25; year++) {
       let yearlyIncome = 0;
       let yearlyExpenses = 0;
+      let yearlyInvestments = 0;
+      let yearlyWithdrawals = 0;
 
-      withoutPlans.push(baseAmount);
-      withPlans.push(plannedAmount);
-      this.lineChartData.labels?.push('Year ' + year);
-
-      // Base calculation (without plans)
-      baseAmount *= (1 + this.interestRate);
-
-      // With plans calculation
-      plannedAmount *= (1 + this.interestRate);
-
-      // Apply all active plans for this year
+      // First calculate income (salary and withdrawals)
       for (const plan of this.plans) {
         if (year >= plan.startYear && year < (plan.startYear + plan.duration)) {
           const adjustedAmount = plan.type === 'salary' && plan.yearlyIncrease
             ? plan.amount * Math.pow(1 + plan.yearlyIncrease/100, year - plan.startYear)
             : plan.amount;
 
-          switch (plan.type) {
-            case 'savings':
-              plannedAmount += adjustedAmount * 12;
-              yearlyExpenses += adjustedAmount * 12;
-              break;
-            case 'withdrawal':
-              const withdrawalAmount = plannedAmount * (adjustedAmount / 100);
-              plannedAmount -= withdrawalAmount;
-              yearlyIncome += withdrawalAmount;
-              break;
-            case 'salary':
-              yearlyIncome += adjustedAmount * 12;
-              break;
+          if (plan.type === 'salary') {
+            yearlyIncome += adjustedAmount * 12;
+          } else if (plan.type === 'withdrawal') {
+            const withdrawalAmount = plannedAmount * (adjustedAmount / 100);
+            plannedAmount -= withdrawalAmount;
+            yearlyIncome += withdrawalAmount;
+            yearlyWithdrawals += withdrawalAmount;
           }
         }
       }
 
+      // Then calculate savings based on cash flow
+      for (const plan of this.plans) {
+        if (plan.type === 'savings' && year >= plan.startYear && year < (plan.startYear + plan.duration)) {
+          if (plan.isPercentage) {
+            // Calculate savings as percentage of positive cash flow
+            const currentCashFlow = yearlyIncome - yearlyExpenses;
+            if (currentCashFlow > 0) {
+              const savingsAmount = currentCashFlow * (plan.amount / 100);
+              plannedAmount += savingsAmount;
+              yearlyExpenses += savingsAmount;
+              yearlyInvestments += savingsAmount;
+            }
+          } else {
+            // Fixed monthly savings
+            const savingsAmount = plan.amount * 12;
+            plannedAmount += savingsAmount;
+            yearlyExpenses += savingsAmount;
+            yearlyInvestments += savingsAmount;
+          }
+        }
+      }
+
+      withoutPlans.push(baseAmount);
+      withPlans.push(plannedAmount);
       cashFlow.push(yearlyIncome - yearlyExpenses);
+      netInvestments.push(yearlyInvestments - yearlyWithdrawals);
+
+      this.lineChartData.labels?.push('Year ' + year);
+
+      // Apply interest for next year
+      baseAmount *= (1 + this.interestRate);
+      plannedAmount *= (1 + this.interestRate);
     }
 
     this.lineChartData.datasets[0].data = withoutPlans;
     this.lineChartData.datasets[1].data = withPlans;
     this.lineChartData.datasets[2].data = cashFlow;
+    this.lineChartData.datasets[3].data = netInvestments;
     this.chart?.update();
   }
 }

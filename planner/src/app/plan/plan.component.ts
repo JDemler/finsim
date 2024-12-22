@@ -6,6 +6,7 @@ export interface Plan {
   id: number;
   type: 'savings' | 'withdrawal' | 'salary';
   amount: number;
+  isPercentage?: boolean;
   startYear: number;
   duration: number;
   yearlyIncrease?: number;
@@ -25,7 +26,7 @@ export class PlanComponent {
 
   get inputLabel(): string {
     switch(this.plan.type) {
-      case 'savings': return 'Monthly Amount:';
+      case 'savings': return this.plan.isPercentage ? 'Percentage of Cash Flow:' : 'Monthly Amount:';
       case 'withdrawal': return 'Yearly Withdrawal:';
       case 'salary': return 'Monthly Salary:';
       default: return '';
@@ -34,11 +35,15 @@ export class PlanComponent {
 
   get stepValue(): number {
     switch(this.plan.type) {
-      case 'savings': return 50;
+      case 'savings': return this.plan.isPercentage ? 1 : 50;
       case 'withdrawal': return 0.1;
       case 'salary': return 100;
       default: return 1;
     }
+  }
+
+  get showPercentageToggle(): boolean {
+    return this.plan.type === 'savings';
   }
 
   onInputChange() {
