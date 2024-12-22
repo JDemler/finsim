@@ -37,7 +37,7 @@ jobs:
 
       - name: Build
         working-directory: planner
-        run: npm run build -- --base-href=/planner/
+        run: npm run build -- --base-href=/finsim/
         # Replace 'planner' with your repository name
 
 
