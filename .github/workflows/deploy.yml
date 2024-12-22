@@ -16,18 +16,20 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: '23'
           cache: 'npm'
 
       - name: Install dependencies
+        working-directory: planner
         run: npm ci
 
       - name: Build
+        working-directory: planner
         run: npm run build -- --base-href=/planner/
         # Replace 'planner' with your repository name
 
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: dist/planner/browser # Angular 17 output directory
+          folder: planner/dist/planner/browser # Angular 17 output directory
           branch: gh-pages
