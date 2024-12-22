@@ -30,8 +30,17 @@ jobs:
         run: npm run build -- --base-href=/planner/
         # Replace 'planner' with your repository name
 
-      - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@v4
+
+      - name: Prepare deployment
+        run: |
+          mkdir -p ./deploy
+          cp -r planner/dist/planner/browser/* ./deploy/
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          folder: planner/dist/planner/browser # Angular 17 output directory
-          branch: gh-pages
+          path: './deploy'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
