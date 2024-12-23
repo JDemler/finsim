@@ -1,7 +1,6 @@
 <div class="plan-item">
-  <h3>{{ plan.type === 'savings' ? 'Savings' : plan.type === 'withdrawal' ? 'Withdrawal' : 'Salary' }} Plan</h3>
-  <div class="plan-type" [attr.data-type]="plan.type">
-    {{ plan.type.charAt(0).toUpperCase() + plan.type.slice(1) }}
+  <div class="plan-header">
+    <h3>Plan {{ plan.id }}: {{ plan.type === 'savings' ? 'Savings' : plan.type === 'withdrawal' ? 'Withdrawal' : 'Salary' }}</h3>
   </div>
 
   <div class="input-group" *ngIf="showPercentageToggle">

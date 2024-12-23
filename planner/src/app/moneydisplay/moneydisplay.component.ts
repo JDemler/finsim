@@ -2,8 +2,10 @@ import { Component, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CurrencyPipe, NgFor, PercentPipe } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
-import { ChartConfiguration, ChartType } from 'chart.js';
+import { Chart, ChartConfiguration, ChartType } from 'chart.js';
 import { PlanComponent, Plan } from '../plan/plan.component';
+import annotationPlugin from 'chartjs-plugin-annotation';
+
 
 @Component({
   selector: 'app-moneydisplay',
@@ -18,6 +20,10 @@ export class MoneydisplayComponent {
   interestRate = 0.05;
   plans: Plan[] = [];
   nextPlanId = 1;
+
+  constructor() {
+    Chart.register(annotationPlugin);
+  }
 
   public lineChartData: ChartConfiguration['data'] = {
     datasets: [
@@ -75,6 +81,27 @@ export class MoneydisplayComponent {
           drawOnChartArea: false
         }
       }
+    },
+    plugins: {
+      annotation: {
+          annotations: {
+            'box-1': {
+              // Indicates the type of annotation
+              type: 'box',
+              xMin: 0,
+              xMax: 5,
+              yMin: 50,
+              yMax: 1000,
+              backgroundColor: 'rgba(0,0,0,0.15)',
+              borderColor: 'rgba(0,0,0,0)',
+              label: {
+                display: true,
+                content: 'Plan 1: Savings',
+                position: 'start'
+              }
+            }
+          }
+        }
     }
   };
 
@@ -184,10 +211,42 @@ export class MoneydisplayComponent {
       plannedAmount *= (1 + this.interestRate);
     }
 
+    // Add annotations for active plan periods
+    const annotations: any = {};
+
+    this.plans.forEach((plan, index) => {
+      const planNumber = plan.id;
+      const yPos = index * 20 + 10; // Stack annotations vertically
+
+      annotations[`plan-${planNumber}`] = {
+        type: 'box',
+        xMin: 0,
+        xMax: 5,
+        yMin: 50,
+        yMax: 1000,
+        backgroundColor: 'rgba(0,0,0,0.15)',
+        borderColor: 'rgba(0,0,0,0)',
+        label: {
+          display: true,
+          content: `Plan ${planNumber}: ${plan.type}`,
+          position: 'start'
+        }
+      };
+    });
+
+    if (this.lineChartOptions?.plugins?.annotation) {
+      this.lineChartOptions.plugins.annotation.annotations = annotations;
+    }
+
     this.lineChartData.datasets[0].data = withoutPlans;
     this.lineChartData.datasets[1].data = withPlans;
     this.lineChartData.datasets[2].data = cashFlow;
     this.lineChartData.datasets[3].data = netInvestments;
-    this.chart?.update();
+    if (this.chart) {
+      this.chart.update();
+      console.log('Chart updated');
+    } else {
+      console.log('No chart found');
+    }
   }
 }
