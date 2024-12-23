@@ -5,6 +5,7 @@ import { BaseChartDirective } from 'ng2-charts';
 import { Chart, ChartConfiguration, ChartType } from 'chart.js';
 import { PlanComponent, Plan } from '../plan/plan.component';
 import annotationPlugin from 'chartjs-plugin-annotation';
+import { FinancialCalculatorService } from '../services/financial-calculator.service';
 
 
 @Component({
@@ -17,11 +18,13 @@ export class MoneydisplayComponent {
   @ViewChild(BaseChartDirective) chart?: BaseChartDirective;
 
   totalMoney = 1000;
+  startingCash = 5000;
+  monthlyExpenses = 2000;
   interestRate = 0.05;
   plans: Plan[] = [];
   nextPlanId = 1;
 
-  constructor() {
+  constructor(private calculator: FinancialCalculatorService) {
     Chart.register(annotationPlugin);
   }
 
@@ -43,7 +46,7 @@ export class MoneydisplayComponent {
       },
       {
         data: [],
-        label: 'Cash Flow',
+        label: 'Cash Balance',
         borderColor: 'rgba(255,140,0,1)',
         pointBackgroundColor: 'rgba(255,140,0,1)',
         tension: 0.5,
@@ -138,115 +141,104 @@ export class MoneydisplayComponent {
   }
 
   calculateProjections() {
-    const withoutPlans = [];
-    const withPlans = [];
-    const cashFlow = [];
-    const netInvestments = [];
-    let baseAmount = this.totalMoney;
-    let plannedAmount = this.totalMoney;
-
-    // Clear previous data
-    this.lineChartData.datasets[0].data = [];
-    this.lineChartData.datasets[1].data = [];
-    this.lineChartData.datasets[2].data = [];
-    this.lineChartData.datasets[3].data = [];
-    this.lineChartData.labels = [];
-
-    // Calculate for next 25 years
-    for (let year = 0; year <= 25; year++) {
-      let yearlyIncome = 0;
-      let yearlyExpenses = 0;
-      let yearlyInvestments = 0;
-      let yearlyWithdrawals = 0;
-
-      // First calculate income (salary and withdrawals)
-      for (const plan of this.plans) {
-        if (year >= plan.startYear && year < (plan.startYear + plan.duration)) {
-          const adjustedAmount = plan.type === 'salary' && plan.yearlyIncrease
-            ? plan.amount * Math.pow(1 + plan.yearlyIncrease/100, year - plan.startYear)
-            : plan.amount;
-
-          if (plan.type === 'salary') {
-            yearlyIncome += adjustedAmount * 12;
-          } else if (plan.type === 'withdrawal') {
-            const withdrawalAmount = plannedAmount * (adjustedAmount / 100);
-            plannedAmount -= withdrawalAmount;
-            yearlyIncome += withdrawalAmount;
-            yearlyWithdrawals += withdrawalAmount;
-          }
-        }
-      }
-
-      // Then calculate savings based on cash flow
-      for (const plan of this.plans) {
-        if (plan.type === 'savings' && year >= plan.startYear && year < (plan.startYear + plan.duration)) {
-          if (plan.isPercentage) {
-            // Calculate savings as percentage of positive cash flow
-            const currentCashFlow = yearlyIncome - yearlyExpenses;
-            if (currentCashFlow > 0) {
-              const savingsAmount = currentCashFlow * (plan.amount / 100);
-              plannedAmount += savingsAmount;
-              yearlyExpenses += savingsAmount;
-              yearlyInvestments += savingsAmount;
-            }
-          } else {
-            // Fixed monthly savings
-            const savingsAmount = plan.amount * 12;
-            plannedAmount += savingsAmount;
-            yearlyExpenses += savingsAmount;
-            yearlyInvestments += savingsAmount;
-          }
-        }
-      }
-
-      withoutPlans.push(baseAmount);
-      withPlans.push(plannedAmount);
-      cashFlow.push(yearlyIncome - yearlyExpenses);
-      netInvestments.push(yearlyInvestments - yearlyWithdrawals);
-
-      this.lineChartData.labels?.push('Year ' + year);
-
-      // Apply interest for next year
-      baseAmount *= (1 + this.interestRate);
-      plannedAmount *= (1 + this.interestRate);
-    }
-
-    // Add annotations for active plan periods
-    const annotations: any = {};
-
-    this.plans.forEach((plan, index) => {
-      const planNumber = plan.id;
-      const yPos = index * 20 + 10; // Stack annotations vertically
-
-      annotations[`plan-${planNumber}`] = {
-        type: 'box',
-        xMin: 0,
-        xMax: 5,
-        yMin: 50,
-        yMax: 1000,
-        backgroundColor: 'rgba(0,0,0,0.15)',
-        borderColor: 'rgba(0,0,0,0)',
-        label: {
-          display: true,
-          content: `Plan ${planNumber}: ${plan.type}`,
-          position: 'start'
-        }
-      };
+    const results = this.calculator.calculate({
+      initialInvestment: this.totalMoney,
+      initialCash: this.startingCash,
+      monthlyExpenses: this.monthlyExpenses,
+      interestRate: this.interestRate,
+      plans: this.plans,
+      years: 25
     });
+    console.log(results);
 
-    if (this.lineChartOptions?.plugins?.annotation) {
-      this.lineChartOptions.plugins.annotation.annotations = annotations;
-    }
+    // Update chart data
+    this.lineChartData.datasets[0].data = results.map(r => r.baselineInvestments);
+    this.lineChartData.datasets[1].data = results.map(r => r.investmentBalance);
+    this.lineChartData.datasets[2].data = results.map(r => r.cashBalance);
+    this.lineChartData.datasets[3].data = results.map(r => r.netInvestments);
+    this.lineChartData.labels = results.map(r => "Year " + r.year);
 
-    this.lineChartData.datasets[0].data = withoutPlans;
-    this.lineChartData.datasets[1].data = withPlans;
-    this.lineChartData.datasets[2].data = cashFlow;
-    this.lineChartData.datasets[3].data = netInvestments;
+    // Create new chart options with updated annotations
+    this.lineChartOptions = {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          position: 'left',
+          ticks: {
+            callback: (value) => '€' + value
+          }
+        },
+        cashflow: {
+          beginAtZero: true,
+          position: 'right',
+          ticks: {
+            callback: (value) => '€' + value + '/yr'
+          },
+          grid: {
+            drawOnChartArea: false
+          }
+        }
+      },
+      plugins: {
+        annotation: {
+          annotations: this.plans.reduce((acc, plan, index) => {
+            // Calculate vertical position for each annotation
+            const heightPerAnnotation = 8;
+            const spacing = 1;
+            const yStart = index * (heightPerAnnotation + spacing);
+
+            // Color based on plan type
+            const colors = {
+              savings: 'rgba(77,183,96,0.15)',
+              withdrawal: 'rgba(255,140,0,0.15)',
+              salary: 'rgba(33,150,243,0.15)'
+            };
+
+            // Find plans that start in the same year
+            const plansStartingSameYear = this.plans.filter(p => p.startYear === plan.startYear);
+            const positionInGroup = plansStartingSameYear.findIndex(p => p.id === plan.id);
+            const labelOffset = positionInGroup * 120; // Pixels to offset each label
+
+            acc[`plan-${plan.id}`] = {
+              type: 'box',
+              xMin: plan.startYear,
+              xMax: plan.startYear + plan.duration,
+              yMin: `${yStart}%`,
+              yMax: `${yStart + heightPerAnnotation}%`,
+              backgroundColor: colors[plan.type],
+              borderColor: 'rgba(0,0,0,0)',
+              label: {
+                display: true,
+                content: `Plan ${plan.id}: ${plan.type}`,
+                position: {
+                  x: 'start',
+                  y: 'center'
+                },
+                font: {
+                  size: 11
+                },
+                color: 'rgba(0,0,0,0.7)',
+                padding: {
+                  top: 4,
+                  bottom: 4,
+                  left: 6,
+                  right: 6
+                },
+                xAdjust: labelOffset // Offset labels horizontally when they share start year
+              }
+            };
+            return acc;
+          }, {} as any)
+        }
+      }
+    };
+
+    // Force chart update with new options
     if (this.chart) {
       this.chart.update();
-      console.log('Chart updated');
-    } else {
-      console.log('No chart found');
+      //this.chart.chart.options = this.lineChartOptions;
+      //this.chart.chart.update('none'); // Use 'none' mode for performance
     }
   }
 }

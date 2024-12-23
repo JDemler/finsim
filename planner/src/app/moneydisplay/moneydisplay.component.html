@@ -1,8 +1,20 @@
 <div class="moneydisplay">
   <div class="moneydisplay-item">
-    <h2>Initial Money</h2>
+    <h2>Initial Investments</h2>
     <input type="number" [(ngModel)]="totalMoney" (ngModelChange)="onInputChange()" step="100" />
     <p>{{ totalMoney | currency:'EUR':'symbol':'1.2-2'}}</p>
+  </div>
+
+  <div class="moneydisplay-item">
+    <h2>Starting Cash</h2>
+    <input type="number" [(ngModel)]="startingCash" (ngModelChange)="onInputChange()" step="100" />
+    <p>{{ startingCash | currency:'EUR':'symbol':'1.2-2'}}</p>
+  </div>
+
+  <div class="moneydisplay-item">
+    <h2>Monthly Expenses</h2>
+    <input type="number" [(ngModel)]="monthlyExpenses" (ngModelChange)="onInputChange()" step="100" />
+    <p>{{ monthlyExpenses | currency:'EUR':'symbol':'1.2-2'}}</p>
   </div>
 
   <div class="moneydisplay-interestrate">
