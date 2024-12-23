@@ -31,7 +31,8 @@
 
 .run-button-container
   display: flex
-  align-items: flex-end
+  flex-direction: column
+  gap: 10px
   padding-bottom: 8px
 
   button
@@ -43,14 +44,78 @@
     border-radius: 4px
     font-size: 1em
     cursor: pointer
-    transition: background-color 0.2s
+    transition: all 0.3s ease
 
     &:hover:not(:disabled)
       background-color: #45a049
+      transform: translateY(-1px)
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1)
+
+    &:active:not(:disabled)
+      transform: translateY(0)
+      box-shadow: none
 
     &:disabled
       background-color: #cccccc
       cursor: not-allowed
+
+  .progress-bar
+    width: 100%
+    height: 30px
+    background-color: #eee
+    border-radius: 6px
+    overflow: hidden
+    position: relative
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1)
+    animation: appear 0.3s ease-out
+
+    .progress
+      height: 100%
+      background: linear-gradient(90deg, #4CAF50, #45a049)
+      transition: width 0.3s ease
+      position: relative
+      overflow: hidden
+
+      &::after
+        content: ''
+        position: absolute
+        top: 0
+        left: 0
+        right: 0
+        bottom: 0
+        background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.2), rgba(255,255,255,0))
+        animation: shine 1.5s infinite
+
+    .progress-text
+      position: absolute
+      top: 50%
+      left: 50%
+      transform: translate(-50%, -50%)
+      font-size: 0.85em
+      font-weight: 500
+      color: #444
+      text-shadow: 0 0 3px white
+      animation: fadeIn 0.3s ease-out
+
+@keyframes shine
+  from
+    transform: translateX(-100%)
+  to
+    transform: translateX(100%)
+
+@keyframes appear
+  from
+    transform: scaleY(0)
+    opacity: 0
+  to
+    transform: scaleY(1)
+    opacity: 1
+
+@keyframes fadeIn
+  from
+    opacity: 0
+  to
+    opacity: 1
 
 .results-section
   margin-top: 30px

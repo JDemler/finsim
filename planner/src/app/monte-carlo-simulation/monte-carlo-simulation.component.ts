@@ -38,6 +38,7 @@ export class MonteCarloSimulationComponent {
   private sigmaDaily: number = 0;
   private dataLoaded = false;
   isLoading = false;
+  progress = 0;
 
   // Parameters
   params: SimulationParams = {
@@ -135,6 +136,7 @@ export class MonteCarloSimulationComponent {
   async runSimulation() {
     if (!this.dataLoaded || this.isLoading) return;
     this.isLoading = true;
+    this.progress = 0;
 
     try {
       const paths: number[][] = [];
@@ -164,6 +166,13 @@ export class MonteCarloSimulationComponent {
 
         paths.push(path);
         finalValues.push(value);
+
+        // Update progress every 10 simulations or on the last one
+        if (sim % 10 === 0 || sim === this.params.numSimulations - 1) {
+          this.progress = (sim + 1) / this.params.numSimulations * 100;
+          // Allow UI to update by yielding to the event loop
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
       }
 
       // Calculate statistics
@@ -181,6 +190,7 @@ export class MonteCarloSimulationComponent {
       this.updateChart(result);
     } finally {
       this.isLoading = false;
+      this.progress = 0;
     }
   }
 

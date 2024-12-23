@@ -38,6 +38,10 @@
       <button (click)="runSimulation()" [disabled]="isLoading">
         {{ isLoading ? 'Running...' : 'Run Simulation' }}
       </button>
+      <div class="progress-bar" *ngIf="isLoading">
+        <div class="progress" [style.width.%]="progress"></div>
+        <span class="progress-text">{{ progress.toFixed(1) }}%</span>
+      </div>
     </div>
   </div>
 
