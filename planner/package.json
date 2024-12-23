@@ -6,7 +6,10 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test:headless": "ng test --browsers=ChromeHeadless --watch=false",
+    "test:headless:watch": "ng test --browsers=ChromeHeadless",
+    "test:calculator": "ng test --browsers=ChromeHeadless --watch=false --include=**/financial-calculator.service.spec.ts"
   },
   "private": true,
   "dependencies": {

@@ -30,6 +30,15 @@ export class FinancialCalculatorService {
     let baselineAmount = params.initialInvestment;
 
     for (let year = 0; year <= params.years; year++) {
+      // Store results at the beginning of the year
+      results.push({
+        year,
+        investmentBalance,
+        cashBalance,
+        netInvestments: 0, // Will be updated for this year
+        baselineInvestments: baselineAmount
+      });
+
       let yearlyIncome = 0;
       let yearlyExpenses = params.monthlyExpenses * 12;
       let yearlyInvestments = 0;
@@ -43,10 +52,17 @@ export class FinancialCalculatorService {
         }
       }
 
-      // 2. Update cash balance with income and base expenses
-      cashBalance += yearlyIncome - yearlyExpenses;
+      // Calculate yearly cashflow
+      const yearlyCashflow = yearlyIncome - yearlyExpenses;
 
-      // 3. Process withdrawal plans
+      // 2. Update cash balance with income and base expenses
+      cashBalance += yearlyCashflow;
+
+      // 3. Apply interest for next year
+      investmentBalance *= (1 + params.interestRate);
+      baselineAmount *= (1 + params.interestRate);
+
+      // 4. Process withdrawal plans
       for (const plan of params.plans.filter(p => p.type === 'withdrawal')) {
         if (this.isPlanActive(plan, year)) {
           const withdrawalPercentage = plan.amount;
@@ -57,10 +73,10 @@ export class FinancialCalculatorService {
         }
       }
 
-      // 4. Process savings plans
+      // 5. Process savings plans
       for (const plan of params.plans.filter(p => p.type === 'savings')) {
         if (this.isPlanActive(plan, year)) {
-          const savingsAmount = this.calculateSavingsAmount(plan, cashBalance);
+          const savingsAmount = this.calculateSavingsAmount(plan, yearlyCashflow);
           if (savingsAmount > 0) {
             investmentBalance += savingsAmount;
             cashBalance -= savingsAmount;
@@ -69,18 +85,8 @@ export class FinancialCalculatorService {
         }
       }
 
-      // 5. Apply interest for next year
-      investmentBalance *= (1 + params.interestRate);
-      baselineAmount *= (1 + params.interestRate);
-
-      // Store results
-      results.push({
-        year,
-        investmentBalance,
-        cashBalance,
-        netInvestments: yearlyInvestments - yearlyWithdrawals,
-        baselineInvestments: baselineAmount
-      });
+      // Update netInvestments for the current year's results
+      results[year].netInvestments = yearlyInvestments - yearlyWithdrawals;
     }
 
     return results;
@@ -97,9 +103,9 @@ export class FinancialCalculatorService {
     return plan.amount;
   }
 
-  private calculateSavingsAmount(plan: Plan, cashBalance: number): number {
+  private calculateSavingsAmount(plan: Plan, yearlyCashflow: number): number {
     if (plan.isPercentage) {
-      return cashBalance > 0 ? cashBalance * (plan.amount / 100) : 0;
+      return yearlyCashflow > 0 ? yearlyCashflow * (plan.amount / 100) : 0;
     }
     return plan.amount * 12;
   }

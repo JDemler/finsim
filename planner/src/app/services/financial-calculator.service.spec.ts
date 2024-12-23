@@ -21,7 +21,8 @@ describe('FinancialCalculatorService', () => {
     };
 
     const results = service.calculate(params);
-    expect(results[1].baselineInvestments).toBeCloseTo(10500);
+    expect(results[0].baselineInvestments).toBe(10000);
+    expect(results[1].baselineInvestments).toBe(10500);
   });
 
   it('should handle salary income', () => {
@@ -42,11 +43,11 @@ describe('FinancialCalculatorService', () => {
     };
 
     const results = service.calculate(params);
-    // Yearly: (2000 * 12) - (1000 * 12) = 12000
+    expect(results[0].cashBalance).toBe(0);
     expect(results[1].cashBalance).toBe(12000);
   });
 
-  it('should handle percentage-based savings', () => {
+  it('should handle percentage-based savings if no cashflow', () => {
     const params: CalculationParams = {
       initialInvestment: 0,
       initialCash: 10000,
@@ -64,8 +65,41 @@ describe('FinancialCalculatorService', () => {
     };
 
     const results = service.calculate(params);
-    expect(results[0].netInvestments).toBe(5000); // 50% of 10000
-    expect(results[0].cashBalance).toBe(5000);
+    expect(results[0].netInvestments).toBe(0);
+    expect(results[0].cashBalance).toBe(10000);
+    expect(results[1].netInvestments).toBe(0);
+    expect(results[1].cashBalance).toBe(10000);
+  });
+
+  it('should handle percentage-based savings with cashflow', () => {
+    const params: CalculationParams = {
+      initialInvestment: 0,
+      initialCash: 10000,
+      monthlyExpenses: 0,
+      interestRate: 0.05,
+      plans: [{
+        id: 1,
+        type: 'savings',
+        amount: 50,
+        isPercentage: true,
+        startYear: 0,
+        duration: 1
+      },
+      {
+        id: 2,
+        type: 'salary',
+        amount: 2000,
+        startYear: 0,
+        duration: 1
+      }],
+      years: 1
+    };
+
+    const results = service.calculate(params);
+    expect(results[0].cashBalance).toBe(10000);
+    expect(results[0].netInvestments).toBe(12000);
+    expect(results[1].cashBalance).toBe(22000);
+    expect(results[1].netInvestments).toBe(0);
   });
 
   it('should handle salary with yearly increase', () => {
@@ -86,20 +120,21 @@ describe('FinancialCalculatorService', () => {
     };
 
     const results = service.calculate(params);
-    expect(results[0].cashBalance).toBe(12000);  // First year: 1000 * 12
-    expect(results[1].cashBalance).toBe(25200);  // Second year: (1000 * 1.1) * 12 + 12000
+    expect(results[0].cashBalance).toBe(0);
+    expect(results[1].cashBalance).toBe(12000);
+    expect(results[2].cashBalance).toBe(25200);
   });
 
   it('should handle withdrawal plans', () => {
     const params: CalculationParams = {
-      initialInvestment: 100000,
+      initialInvestment: 1000,
       initialCash: 0,
       monthlyExpenses: 0,
       interestRate: 0.05,
       plans: [{
         id: 1,
         type: 'withdrawal',
-        amount: 10,  // 10% withdrawal
+        amount: 10,
         startYear: 0,
         duration: 1
       }],
@@ -107,8 +142,10 @@ describe('FinancialCalculatorService', () => {
     };
 
     const results = service.calculate(params);
-    expect(results[0].investmentBalance).toBe(90000);  // 100000 - 10%
-    expect(results[0].cashBalance).toBe(10000);  // Withdrawn amount
+    expect(results[0].investmentBalance).toBe(1000);
+    expect(results[0].cashBalance).toBe(0);
+    expect(results[1].investmentBalance).toBe(945);
+    expect(results[1].cashBalance).toBe(105);
   });
 
   it('should handle multiple concurrent plans', () => {
@@ -137,12 +174,10 @@ describe('FinancialCalculatorService', () => {
     };
 
     const results = service.calculate(params);
-    // Initial cash: 5000
-    // Yearly salary: 24000
-    // Yearly expenses: -12000
-    // Yearly savings: -6000
-    expect(results[0].cashBalance).toBe(11000);
-    expect(results[0].investmentBalance).toBeCloseTo(16900); // 10000 + 6000 savings + 5% interest
+    expect(results[0].cashBalance).toBe(5000);
+    expect(results[0].investmentBalance).toBe(10000);
+    expect(results[1].cashBalance).toBe(11000);
+    expect(results[1].investmentBalance).toBe(16500);
   });
 
   it('should handle negative cash balance', () => {
@@ -156,7 +191,8 @@ describe('FinancialCalculatorService', () => {
     };
 
     const results = service.calculate(params);
-    expect(results[1].cashBalance).toBe(-23000); // 1000 - (2000 * 12)
+    expect(results[0].cashBalance).toBe(1000);
+    expect(results[1].cashBalance).toBe(-23000);
   });
 
   // Add more tests...
