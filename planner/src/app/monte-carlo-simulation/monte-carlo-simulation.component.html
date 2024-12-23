@@ -1,0 +1,68 @@
+<div class="monte-carlo">
+  <h2>FTSE All-World Monte Carlo Simulation</h2>
+
+  <div class="params-section">
+    <div class="param-group">
+      <label>
+        Initial Investment
+        <input type="number" [(ngModel)]="params.initialInvestment" step="1000" />
+      </label>
+      <span>{{ params.initialInvestment | currency:'EUR':'symbol':'1.0-0' }}</span>
+    </div>
+
+    <div class="param-group">
+      <label>
+        Monthly Investment
+        <input type="number" [(ngModel)]="params.monthlyInvestment" step="100" />
+      </label>
+      <span>{{ params.monthlyInvestment | currency:'EUR':'symbol':'1.0-0' }}</span>
+    </div>
+
+    <div class="param-group">
+      <label>
+        Years
+        <input type="number" [(ngModel)]="params.years" min="1" max="30" step="1" />
+      </label>
+      <span>{{ params.years }} years</span>
+    </div>
+
+    <div class="param-group">
+      <label>
+        Number of Simulations
+        <input type="number" [(ngModel)]="params.numSimulations" min="100" max="10000" step="100" />
+      </label>
+      <span>{{ params.numSimulations }} paths</span>
+    </div>
+
+    <div class="run-button-container">
+      <button (click)="runSimulation()" [disabled]="isLoading">
+        {{ isLoading ? 'Running...' : 'Run Simulation' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="results-section" *ngIf="result">
+    <div class="stats">
+      <div class="stat-item">
+        <h3>Mean Final Value</h3>
+        <p>{{ result.meanFinalValue | currency:'EUR':'symbol':'1.0-0' }}</p>
+      </div>
+      <div class="stat-item">
+        <h3>5th Percentile</h3>
+        <p>{{ result.percentile5 | currency:'EUR':'symbol':'1.0-0' }}</p>
+      </div>
+      <div class="stat-item">
+        <h3>95th Percentile</h3>
+        <p>{{ result.percentile95 | currency:'EUR':'symbol':'1.0-0' }}</p>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <canvas baseChart
+        [type]="lineChartType"
+        [data]="lineChartData"
+        [options]="lineChartOptions">
+      </canvas>
+    </div>
+  </div>
+</div>
