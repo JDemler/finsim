@@ -1,6 +1,17 @@
 import { Injectable } from '@angular/core';
 import { Plan } from '../plan/plan.component';
 
+export interface FinancialEvent {
+  type: 'kid';
+  year: number;
+  // For kid: monthly cost increase
+  monthlyExpenseIncrease: number;
+  // For kid: salary reduction percentage (e.g. 20 means 20% reduction)
+  salaryReductionPercent: number;
+  // For kid: years of salary reduction
+  salaryReductionYears: number;
+}
+
 export interface YearlyResult {
   year: number;
   investmentBalance: number;
@@ -15,6 +26,7 @@ export interface CalculationParams {
   monthlyExpenses: number;
   interestRate: number;
   plans: Plan[];
+  events: FinancialEvent[];
   years: number;
 }
 
@@ -44,10 +56,31 @@ export class FinancialCalculatorService {
       let yearlyInvestments = 0;
       let yearlyWithdrawals = 0;
 
+      // Process events that affect expenses and income
+      for (const event of params.events) {
+        if (event.type === 'kid') {
+          // Add kid expenses if within 18 years of birth
+          if (year >= event.year && year < event.year + 18) {
+            yearlyExpenses += event.monthlyExpenseIncrease * 12;
+          }
+        }
+      }
+
       // 1. Process all salary plans first
       for (const plan of params.plans.filter(p => p.type === 'salary')) {
         if (this.isPlanActive(plan, year)) {
-          const salary = this.calculateAdjustedAmount(plan, year);
+          let salary = this.calculateAdjustedAmount(plan, year);
+
+          // Apply salary reductions from events
+          for (const event of params.events) {
+            if (event.type === 'kid') {
+              // Reduce salary if within specified reduction period
+              if (year >= event.year && year < event.year + event.salaryReductionYears) {
+                salary *= (1 - event.salaryReductionPercent / 100);
+              }
+            }
+          }
+
           yearlyIncome += salary * 12;
         }
       }

@@ -1,84 +1,100 @@
 .moneydisplay
-  max-width: 1200px
-  margin: 0 auto
   padding: 20px
-  display: grid
-  grid-template-columns: repeat(12, 1fr)
+  display: flex
+  flex-direction: column
   gap: 20px
 
-  h2
-    color: #2c3e50
-    margin-bottom: 15px
-
-.moneydisplay-item
-  grid-column: span 4
-
-.moneydisplay-interestrate
-  grid-column: span 4
-
 .moneydisplay-item, .moneydisplay-interestrate
-  background: #f8f9fa
-  padding: 20px
-  border-radius: 8px
-  margin-bottom: 20px
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1)
+  display: flex
+  flex-direction: column
+  gap: 10px
+
+  h2
+    margin: 0
+    font-size: 1.2em
 
   input
-    width: 150px
     padding: 8px
-    border: 1px solid #ddd
+    border: 1px solid #ccc
     border-radius: 4px
-    margin-right: 10px
 
   p
-    font-size: 1.2em
-    color: #2c3e50
-    margin-top: 10px
+    margin: 0
+    color: #666
 
-.plans-section
-  grid-column: span 12
-  margin-top: 30px
+.plans-section, .events-section
+  display: flex
+  flex-direction: column
+  gap: 15px
+  padding: 20px
+  border: 1px solid #eee
+  border-radius: 8px
 
-  .plan-buttons
-    margin-bottom: 20px
-    display: flex
-    gap: 10px
+  h2
+    margin: 0
+    font-size: 1.4em
 
-    button
-      padding: 10px 20px
-      border: none
-      border-radius: 4px
-      cursor: pointer
-      font-weight: 500
-      transition: all 0.2s ease
+.plan-buttons, .event-buttons
+  display: flex
+  gap: 10px
 
-      &:nth-child(1)
-        background: #4CAF50
-        color: white
-        &:hover
-          background: darken(#4CAF50, 10%)
+  button
+    padding: 8px 16px
+    border: none
+    border-radius: 4px
+    background-color: #4CAF50
+    color: white
+    cursor: pointer
 
-      &:nth-child(2)
-        background: #FF9800
-        color: white
-        &:hover
-          background: darken(#FF9800, 10%)
+    &:hover
+      background-color: #45a049
 
-      &:nth-child(3)
-        background: #2196F3
-        color: white
-        &:hover
-          background: darken(#2196F3, 10%)
+.plan-list, .event-list
+  display: flex
+  flex-direction: column
+  gap: 15px
 
-  .plan-list
+.event-item
+  background-color: #f9f9f9
+  padding: 15px
+  border-radius: 6px
+  border: 1px solid #eee
+
+  h3
+    margin: 0 0 10px 0
+    color: #333
+
+  .event-controls
     display: grid
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr))
-    gap: 20px
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))
+    gap: 10px
+    margin-bottom: 15px
+
+    label
+      display: flex
+      flex-direction: column
+      gap: 5px
+      font-size: 0.9em
+      color: #666
+
+      input
+        padding: 6px
+        border: 1px solid #ddd
+        border-radius: 4px
+        width: 100%
+
+  .remove-button
+    padding: 6px 12px
+    border: none
+    border-radius: 4px
+    background-color: #ff5252
+    color: white
+    cursor: pointer
+
+    &:hover
+      background-color: #ff1744
 
 .chart-container
-  grid-column: span 12
-  margin-top: 30px
-  padding: 20px
-  background: white
-  border-radius: 8px
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1)
+  width: 100%
+  height: 400px
+  margin-top: 20px

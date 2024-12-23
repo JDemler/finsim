@@ -1,16 +1,15 @@
 import { Component, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { CurrencyPipe, NgFor, PercentPipe } from '@angular/common';
+import { CurrencyPipe, NgFor, NgIf, PercentPipe } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
 import { Chart, ChartConfiguration, ChartType } from 'chart.js';
 import { PlanComponent, Plan } from '../plan/plan.component';
 import annotationPlugin from 'chartjs-plugin-annotation';
-import { FinancialCalculatorService } from '../services/financial-calculator.service';
-
+import { FinancialCalculatorService, FinancialEvent } from '../services/financial-calculator.service';
 
 @Component({
   selector: 'app-moneydisplay',
-  imports: [FormsModule, CurrencyPipe, PercentPipe, BaseChartDirective, NgFor, PlanComponent],
+  imports: [FormsModule, CurrencyPipe, PercentPipe, NgIf, BaseChartDirective, NgFor, PlanComponent],
   templateUrl: './moneydisplay.component.html',
   styleUrl: './moneydisplay.component.sass'
 })
@@ -22,6 +21,7 @@ export class MoneydisplayComponent {
   monthlyExpenses = 2000;
   interestRate = 0.05;
   plans: Plan[] = [];
+  events: FinancialEvent[] = [];
   nextPlanId = 1;
 
   constructor(private calculator: FinancialCalculatorService) {
@@ -140,6 +140,22 @@ export class MoneydisplayComponent {
     this.calculateProjections();
   }
 
+  addKid(year: number) {
+    this.events.push({
+      type: 'kid',
+      year,
+      monthlyExpenseIncrease: 500, // Default €500 per month
+      salaryReductionPercent: 20,  // Default 20% reduction
+      salaryReductionYears: 3      // Default 3 years reduction
+    });
+    this.calculateProjections();
+  }
+
+  removeEvent(year: number, type: string) {
+    this.events = this.events.filter(e => !(e.year === year && e.type === type));
+    this.calculateProjections();
+  }
+
   calculateProjections() {
     const results = this.calculator.calculate({
       initialInvestment: this.totalMoney,
@@ -147,9 +163,9 @@ export class MoneydisplayComponent {
       monthlyExpenses: this.monthlyExpenses,
       interestRate: this.interestRate,
       plans: this.plans,
+      events: this.events,
       years: 25
     });
-    console.log(results);
 
     // Update chart data
     this.lineChartData.datasets[0].data = results.map(r => r.baselineInvestments);
@@ -178,67 +194,114 @@ export class MoneydisplayComponent {
           grid: {
             drawOnChartArea: false
           }
+        },
+        percentages: {
+          beginAtZero: true,
+          position: 'right',
+          min: 0,
+          max: 100,
+          grid: {
+            drawOnChartArea: false
+          },
+          display: false
         }
       },
       plugins: {
         annotation: {
-          annotations: this.plans.reduce((acc, plan, index) => {
-            // Calculate vertical position for each annotation
-            const heightPerAnnotation = 8;
-            const spacing = 1;
-            const yStart = index * (heightPerAnnotation + spacing);
+          annotations: {
+            ...this.plans.reduce((acc, plan, index) => {
+              // Calculate vertical position for each annotation
+              const heightPerAnnotation = 8;
+              const spacing = 1;
+              const yStart = index * (heightPerAnnotation + spacing);
 
-            // Color based on plan type
-            const colors = {
-              savings: 'rgba(77,183,96,0.15)',
-              withdrawal: 'rgba(255,140,0,0.15)',
-              salary: 'rgba(33,150,243,0.15)'
-            };
+              // Color based on plan type
+              const colors = {
+                savings: 'rgba(77,183,96,0.15)',
+                withdrawal: 'rgba(255,140,0,0.15)',
+                salary: 'rgba(33,150,243,0.15)'
+              };
 
-            // Find plans that start in the same year
-            const plansStartingSameYear = this.plans.filter(p => p.startYear === plan.startYear);
-            const positionInGroup = plansStartingSameYear.findIndex(p => p.id === plan.id);
-            const labelOffset = positionInGroup * 120; // Pixels to offset each label
+              // Find plans that start in the same year
+              const plansStartingSameYear = this.plans.filter(p => p.startYear === plan.startYear);
+              const positionInGroup = plansStartingSameYear.findIndex(p => p.id === plan.id);
+              const labelOffset = positionInGroup * 120;
 
-            acc[`plan-${plan.id}`] = {
-              type: 'box',
-              xMin: plan.startYear,
-              xMax: plan.startYear + plan.duration,
-              yMin: `${yStart}%`,
-              yMax: `${yStart + heightPerAnnotation}%`,
-              backgroundColor: colors[plan.type],
-              borderColor: 'rgba(0,0,0,0)',
-              label: {
-                display: true,
-                content: `Plan ${plan.id}: ${plan.type}`,
-                position: {
-                  x: 'start',
-                  y: 'center'
-                },
-                font: {
-                  size: 11
-                },
-                color: 'rgba(0,0,0,0.7)',
-                padding: {
-                  top: 4,
-                  bottom: 4,
-                  left: 6,
-                  right: 6
-                },
-                xAdjust: labelOffset // Offset labels horizontally when they share start year
+              acc[`plan-${plan.id}`] = {
+                type: 'box',
+                yScaleID: 'percentages',
+                xMin: plan.startYear,
+                xMax: plan.startYear + plan.duration,
+                yMin: `0`,
+                yMax: `${yStart + heightPerAnnotation}%`,
+                backgroundColor: colors[plan.type],
+                borderColor: 'rgba(0,0,0,0)',
+                label: {
+                  display: true,
+                  content: `Plan ${plan.id}: ${plan.type}`,
+                  position: {
+                    x: 'start',
+                    y: 'center'
+                  },
+                  font: {
+                    size: 11
+                  },
+                  color: 'rgba(0,0,0,0.7)',
+                  padding: {
+                    top: 4,
+                    bottom: 4,
+                    left: 6,
+                    right: 6
+                  },
+                  xAdjust: labelOffset
+                }
+              };
+              return acc;
+            }, {} as any),
+            ...this.events.reduce((acc, event, index) => {
+              const heightPerAnnotation = 8;
+              const spacing = 1;
+              const yStart = -((index + 1) * (heightPerAnnotation + spacing)); // Negative to start from bottom
+
+              if (event.type === 'kid') {
+                acc[`event-kid-${event.year}`] = {
+                  type: 'box',
+                  yScaleID: 'percentages',
+                  xMin: event.year,
+                  xMax: event.year + 18, // Kid expenses last 18 years
+                  yMin: index * 5,// `${yStart}%`,
+                  yMax: index * 5 + 5,// `${yStart + heightPerAnnotation}%`,
+                  backgroundColor: 'rgba(233,30,99,0.15)', // Pink for kids
+                  borderColor: 'rgba(233,30,99,0.55)',
+                  label: {
+                    display: true,
+                    content: `Kid born: Year ${event.year}`,
+                    position: {
+                      x: 'start',
+                      y: 'center'
+                    },
+                    font: {
+                      size: 11
+                    },
+                    color: 'rgba(0,0,0,0.7)',
+                    padding: {
+                      top: 4,
+                      bottom: 4,
+                      left: 6,
+                      right: 6
+                    }
+                  }
+                };
               }
-            };
-            return acc;
-          }, {} as any)
+              return acc;
+            }, {} as any)
+          }
         }
       }
     };
 
-    // Force chart update with new options
     if (this.chart) {
       this.chart.update();
-      //this.chart.chart.options = this.lineChartOptions;
-      //this.chart.chart.update('none'); // Use 'none' mode for performance
     }
   }
 }

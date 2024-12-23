@@ -40,6 +40,40 @@
     </div>
   </div>
 
+  <div class="events-section">
+    <h2>Life Events</h2>
+    <div class="event-buttons">
+      <button (click)="addKid(0)">Add Kid</button>
+    </div>
+
+    <div class="event-list">
+      <div *ngFor="let event of events" class="event-item">
+        <div *ngIf="event.type === 'kid'" class="kid-event">
+          <h3>Kid</h3>
+          <div class="event-controls">
+            <label>
+              Birth Year:
+              <input type="number" [(ngModel)]="event.year" (ngModelChange)="calculateProjections()" min="0" step="1" />
+            </label>
+            <label>
+              Monthly Cost:
+              <input type="number" [(ngModel)]="event.monthlyExpenseIncrease" (ngModelChange)="calculateProjections()" min="0" step="50" />
+            </label>
+            <label>
+              Salary Reduction:
+              <input type="number" [(ngModel)]="event.salaryReductionPercent" (ngModelChange)="calculateProjections()" min="0" max="100" step="5" />%
+            </label>
+            <label>
+              Reduction Duration:
+              <input type="number" [(ngModel)]="event.salaryReductionYears" (ngModelChange)="calculateProjections()" min="0" max="18" step="1" /> years
+            </label>
+          </div>
+          <button (click)="removeEvent(event.year, event.type)" class="remove-button">Remove</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="chart-container">
     <canvas baseChart
       [type]="lineChartType"
