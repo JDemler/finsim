@@ -74,6 +74,13 @@
     </div>
   </div>
 
+  <div class="stats">
+    <div class="stat-item">
+      <h3>Invested Amount</h3>
+      <p>{{ investedAmount | currency:'EUR':'symbol':'1.0-0' }}</p>
+    </div>
+  </div>
+
   <div class="chart-container">
     <canvas baseChart
       [type]="lineChartType"

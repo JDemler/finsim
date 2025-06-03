@@ -23,6 +23,7 @@ export class MoneydisplayComponent {
   plans: Plan[] = [];
   events: FinancialEvent[] = [];
   nextPlanId = 1;
+  investedAmount = 0;
 
   constructor(private calculator: FinancialCalculatorService) {
     Chart.register(annotationPlugin);
@@ -173,6 +174,9 @@ export class MoneydisplayComponent {
     this.lineChartData.datasets[2].data = results.map(r => r.cashBalance);
     this.lineChartData.datasets[3].data = results.map(r => r.netInvestments);
     this.lineChartData.labels = results.map(r => "Year " + r.year);
+
+    this.investedAmount = this.totalMoney +
+      results.reduce((sum, r) => sum + r.netInvestments, 0);
 
     // Create new chart options with updated annotations
     this.lineChartOptions = {
