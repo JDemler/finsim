@@ -17,6 +17,7 @@ describe('FinancialCalculatorService', () => {
       monthlyExpenses: 0,
       interestRate: 0.05,
       plans: [],
+      events: [],
       years: 1
     };
 
@@ -39,6 +40,7 @@ describe('FinancialCalculatorService', () => {
         duration: 1,
         yearlyIncrease: 0
       }],
+      events: [],
       years: 1
     };
 
@@ -61,6 +63,7 @@ describe('FinancialCalculatorService', () => {
         startYear: 0,
         duration: 1
       }],
+      events: [],
       years: 1
     };
 
@@ -92,6 +95,7 @@ describe('FinancialCalculatorService', () => {
         startYear: 0,
         duration: 1
       }],
+      events: [],
       years: 1
     };
 
@@ -116,6 +120,7 @@ describe('FinancialCalculatorService', () => {
         duration: 2,
         yearlyIncrease: 10
       }],
+      events: [],
       years: 2
     };
 
@@ -138,6 +143,7 @@ describe('FinancialCalculatorService', () => {
         startYear: 0,
         duration: 1
       }],
+      events: [],
       years: 1
     };
 
@@ -170,6 +176,7 @@ describe('FinancialCalculatorService', () => {
           duration: 1
         }
       ],
+      events: [],
       years: 1
     };
 
@@ -187,6 +194,7 @@ describe('FinancialCalculatorService', () => {
       monthlyExpenses: 2000,
       interestRate: 0,
       plans: [],
+      events: [],
       years: 1
     };
 
