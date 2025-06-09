@@ -1,10 +1,11 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { MoneydisplayComponent } from './moneydisplay/moneydisplay.component';
-import { MonteCarloSimulationComponent } from './monte-carlo-simulation/monte-carlo-simulation.component';
+import { FinancialPlannerComponent } from './financial-planner/financial-planner.component';
+
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, MoneydisplayComponent, MonteCarloSimulationComponent],
+  standalone: true,
+  imports: [RouterOutlet, FinancialPlannerComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.sass'
 })

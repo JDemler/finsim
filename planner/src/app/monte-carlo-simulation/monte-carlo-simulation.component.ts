@@ -5,13 +5,10 @@ import { BaseChartDirective } from 'ng2-charts';
 import { Chart, ChartConfiguration, ChartType } from 'chart.js';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { Input } from '@angular/core'; // Added Input
+import { Plan } from '../plan/plan.component'; // Added Plan import
 
-interface SimulationParams {
-  initialInvestment: number;
-  monthlyInvestment: number;
-  years: number;
-  numSimulations: number;
-}
+// SimulationParams interface removed
 
 interface SimulationResult {
   finalValues: number[];
@@ -41,12 +38,9 @@ export class MonteCarloSimulationComponent {
   progress = 0;
 
   // Parameters
-  params: SimulationParams = {
-    initialInvestment: 10000,
-    monthlyInvestment: 500,
-    years: 10,
-    numSimulations: 1000
-  };
+  @Input() initialInvestment: number = 0;
+  @Input() plans: Plan[] = [];
+  @Input() numSimulations: number = 1000;
 
   // Results
   result: SimulationResult | null = null;
@@ -142,34 +136,94 @@ export class MonteCarloSimulationComponent {
       const paths: number[][] = [];
       const finalValues: number[] = [];
       const daysPerYear = 252;
-      const totalDays = this.params.years * daysPerYear;
-      const monthlyInvestmentDaily = this.params.monthlyInvestment * 12 / daysPerYear;
+
+      // Determine Total Simulation Years
+      let totalYears = 1; // Default to 1 year if no plans
+      if (this.plans && this.plans.length > 0) {
+        totalYears = this.plans.reduce((max, p) => Math.max(max, p.startYear + p.duration), 0);
+      }
+      if (totalYears === 0 && this.plans.length > 0) { // if all plans have 0 duration and start at year 0
+          totalYears = 1;
+      }
+
+
+      const totalDays = totalYears * daysPerYear;
 
       // Generate paths
-      for (let sim = 0; sim < this.params.numSimulations; sim++) {
-        let value = this.params.initialInvestment;
-        const path = [value];
+      for (let sim = 0; sim < this.numSimulations; sim++) {
+        let currentInvestmentValue = this.initialInvestment;
+        const path = [currentInvestmentValue]; // Store initial value
 
         for (let day = 0; day < totalDays; day++) {
-          // Add daily portion of monthly investment
-          value += monthlyInvestmentDaily;
+          const currentYear = Math.floor(day / daysPerYear);
+          // const currentMonth = Math.floor(day / 21); // Approximation for monthly events - might not be needed if processing daily
 
-          // Generate random return from historical distribution
+          let netDailyCashFlow = 0;
+          let netDailyInvestmentChange = 0;
+          let dailySalaryForPercentageSavings = 0;
+
+          if (this.plans) {
+            for (const plan of this.plans) {
+              const isActive = currentYear >= plan.startYear && currentYear < plan.startYear + plan.duration;
+              if (isActive) {
+                switch (plan.type) {
+                  case 'salary':
+                    const currentAnnualSalary = (plan.amount || 0) * Math.pow(1 + ((plan.yearlyIncrease || 0) / 100), currentYear - plan.startYear);
+                    const dailySalary = currentAnnualSalary / daysPerYear;
+                    netDailyCashFlow += dailySalary;
+                    dailySalaryForPercentageSavings += dailySalary;
+                    break;
+                  case 'withdrawal':
+                    netDailyInvestmentChange -= (plan.amount || 0) / daysPerYear;
+                    break;
+                  case 'savings':
+                    if (!plan.isPercentage) {
+                      netDailyInvestmentChange += (plan.amount || 0) / daysPerYear;
+                    }
+                    // Percentage savings will be handled after other cash flows
+                    break;
+                }
+              }
+            }
+          }
+
+          // Apply percentage savings based on daily salary (simplified)
+          if (this.plans) {
+            for (const plan of this.plans) {
+                 const isActive = currentYear >= plan.startYear && currentYear < plan.startYear + plan.duration;
+                 if (isActive && plan.type === 'savings' && plan.isPercentage) {
+                    netDailyInvestmentChange += (dailySalaryForPercentageSavings * (plan.amount || 0) / 100);
+                 }
+            }
+          }
+
+          currentInvestmentValue += netDailyInvestmentChange;
+          currentInvestmentValue += netDailyCashFlow; // All cash flow directly to investment
+
+          // Ensure non-negative investment value (optional, or handle as needed)
+          // currentInvestmentValue = Math.max(0, currentInvestmentValue);
+
           const dailyReturn = this.randomNormal(this.muDaily, this.sigmaDaily);
-          value *= (1 + dailyReturn);
+          currentInvestmentValue *= (1 + dailyReturn);
 
-          // Store value at monthly intervals for visualization
-          if (day % 21 === 0) { // Approximately monthly
-            path.push(value);
+          if (day % 21 === 0) { // Approximately monthly for path storage
+            path.push(currentInvestmentValue);
           }
         }
+        // Ensure the very last value is added to the path if not perfectly divisible by 21
+        if (totalDays > 0 && (totalDays -1) % 21 !== 0) {
+            path.push(currentInvestmentValue);
+        } else if (totalDays === 0) { // Handle if totalDays is 0, path should still have initial investment
+            if(path.length === 0) path.push(currentInvestmentValue);
+        }
+
 
         paths.push(path);
-        finalValues.push(value);
+        finalValues.push(currentInvestmentValue); // Store final value of the path
 
         // Update progress every 10 simulations or on the last one
-        if (sim % 10 === 0 || sim === this.params.numSimulations - 1) {
-          this.progress = (sim + 1) / this.params.numSimulations * 100;
+        if (sim % 10 === 0 || sim === this.numSimulations - 1) { // Use this.numSimulations
+          this.progress = (sim + 1) / this.numSimulations * 100; // Use this.numSimulations
           // Allow UI to update by yielding to the event loop
           await new Promise(resolve => setTimeout(resolve, 0));
         }
@@ -195,10 +249,28 @@ export class MonteCarloSimulationComponent {
   }
 
   private updateChart(result: SimulationResult) {
+    // Determine Total Simulation Years (consistent with runSimulation)
+    let totalYears = 1; // Default to 1 year if no plans
+    if (this.plans && this.plans.length > 0) {
+      totalYears = this.plans.reduce((max, p) => Math.max(max, p.startYear + p.duration), 0);
+    }
+    if (totalYears === 0 && this.plans.length > 0) {
+        totalYears = 1;
+    }
+    if (totalYears === 0 && this.initialInvestment > 0 && (!this.plans || this.plans.length === 0) ) { // if no plans but initial investment
+        totalYears = 1; // Show at least one year for initial investment display
+    }
+
+
     // Create labels for monthly intervals
     const labels = Array.from(
-      { length: Math.floor(this.params.years * 12) + 1 },
-      (_, i) => i === 0 ? 'Start' : `Year ${Math.floor(i/12)}`
+      { length: Math.floor(totalYears * 12) + 1 },
+      (_, i) => {
+        if (i === 0) return 'Start';
+        const yearNum = Math.ceil(i / 12);
+        const monthNum = i % 12 === 0 ? 12 : i % 12;
+        return `Y${yearNum}M${monthNum}`;
+      }
     );
 
     // Select a subset of paths to visualize
