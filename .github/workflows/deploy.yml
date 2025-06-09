@@ -1,24 +1,28 @@
-name: Deploy to GitHub Pages
+name: Build, Test, and Deploy
 
 on:
   push:
     branches:
-      - main  # or your default branch name
+      - main
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
   pages: write
   id-token: write
 
-
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  e2e-tests:
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        working-directory: planner
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,18 +34,46 @@ jobs:
           cache: 'npm'
           cache-dependency-path: planner/package-lock.json
 
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Build application
+        run: npm run build -- --base-href=/finsim/
+        # Replace 'planner' with your repository name for base-href in actual use if needed
+
+      - name: Run Playwright tests
+        run: npm run e2e:headless
+
+  build-and-deploy:
+    needs: e2e-tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: planner
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23'
+          cache: 'npm'
+          cache-dependency-path: planner/package-lock.json
 
       - name: Install dependencies
-        working-directory: planner
         run: npm ci
 
       - name: Build
-        working-directory: planner
         run: npm run build -- --base-href=/finsim/
         # Replace 'planner' with your repository name
 
-
       - name: Prepare deployment
+        # This step needs to run from the root, so remove default working-directory
+        working-directory: ${{ github.workspace }}
         run: |
           mkdir -p ./deploy
           cp -r planner/dist/planner/browser/* ./deploy/
