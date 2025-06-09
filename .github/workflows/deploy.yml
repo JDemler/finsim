@@ -19,8 +19,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  test-build-and-deploy:
-    id: build_and_deploy_job # Add id here
+  e2e-tests:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -50,7 +49,6 @@ jobs:
         run: npm run e2e:headless
 
   build-and-deploy:
-    needs: e2e-tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -103,7 +101,7 @@ jobs:
   comment-pr-preview-link:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository # Only run for PRs from the same repo
-    needs: build_and_deploy_job
+    needs: build-and-deploy
     steps:
       - name: Comment PR Preview Link
         uses: actions/github-script@v7
