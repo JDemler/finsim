@@ -117,7 +117,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
-              body: `🚀 PR Preview available at: [${previewUrl}](${previewUrl})
-
-Action run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`
-            });
+              body: `🚀 PR Preview available at: [${previewUrl}](${previewUrl})`)};
+            
