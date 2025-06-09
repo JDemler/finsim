@@ -45,6 +45,36 @@
     </div>
   </div>
 
+  <div class="life-events-section">
+    <h2>Life Events</h2>
+    <div class="event-list" *ngIf="lifeEvents.length > 0">
+      <h3>Current Life Events:</h3>
+      <ul>
+        <li *ngFor="let event of lifeEvents; let i = index">
+          <span>{{ event.name }} (Year: {{ event.year }}, Cost: {{ event.cost | currency:'EUR':'symbol':'1.0-0' }})</span>
+          <button (click)="removeLifeEvent(i)" class="remove-event-btn">Remove</button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="add-event-form">
+      <h3>Add New Life Event:</h3>
+      <div class="form-group">
+        <label for="eventName">Event Name:</label>
+        <input type="text" id="eventName" [(ngModel)]="newEventName" placeholder="e.g., Buy House">
+      </div>
+      <div class="form-group">
+        <label for="eventYear">Event Year:</label>
+        <input type="number" id="eventYear" [(ngModel)]="newEventYear" placeholder="e.g., 5">
+      </div>
+      <div class="form-group">
+        <label for="eventCost">Event Cost:</label>
+        <input type="number" id="eventCost" [(ngModel)]="newEventCost" placeholder="e.g., 50000">
+      </div>
+      <button (click)="onAddLifeEvent()" class="add-event-btn">Add Life Event</button>
+    </div>
+  </div>
+
   <div class="results-section" *ngIf="result">
     <div class="stats">
       <div class="stat-item">

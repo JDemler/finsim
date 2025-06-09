@@ -21,6 +21,12 @@ interface SimulationResult {
   paths: number[][];  // For visualization
 }
 
+interface LifeEvent {
+  name: string;
+  year: number;
+  cost: number;
+}
+
 @Component({
   selector: 'app-monte-carlo-simulation',
   standalone: true,
@@ -47,6 +53,14 @@ export class MonteCarloSimulationComponent {
     years: 10,
     numSimulations: 1000
   };
+
+  public lifeEvents: LifeEvent[] = [
+    { name: "Buy a car", year: 5, cost: 20000 },
+    { name: "Buy a house", year: 10, cost: 50000 }
+  ];
+  newEventName: string = '';
+  newEventYear: number = 0;
+  newEventCost: number = 0;
 
   // Results
   result: SimulationResult | null = null;
@@ -145,18 +159,34 @@ export class MonteCarloSimulationComponent {
       const totalDays = this.params.years * daysPerYear;
       const monthlyInvestmentDaily = this.params.monthlyInvestment * 12 / daysPerYear;
 
+      const sortedLifeEvents = [...this.lifeEvents].sort((a, b) => a.year - b.year);
+
       // Generate paths
       for (let sim = 0; sim < this.params.numSimulations; sim++) {
         let value = this.params.initialInvestment;
         const path = [value];
+        let eventYearPtr = 0;
 
         for (let day = 0; day < totalDays; day++) {
+          const currentYear = Math.floor(day / daysPerYear) + 1; // Simulation year starts from 1
+
           // Add daily portion of monthly investment
           value += monthlyInvestmentDaily;
+
+          // Apply life event costs at the beginning of the year
+          if (day % daysPerYear === 0) {
+            while (eventYearPtr < sortedLifeEvents.length && sortedLifeEvents[eventYearPtr].year === currentYear) {
+              value -= sortedLifeEvents[eventYearPtr].cost;
+              eventYearPtr++;
+            }
+          }
 
           // Generate random return from historical distribution
           const dailyReturn = this.randomNormal(this.muDaily, this.sigmaDaily);
           value *= (1 + dailyReturn);
+
+          // Ensure value doesn't go below zero if desired (e.g. debt is not allowed)
+          // value = Math.max(0, value);
 
           // Store value at monthly intervals for visualization
           if (day % 21 === 0) { // Approximately monthly
@@ -250,5 +280,33 @@ export class MonteCarloSimulationComponent {
       return arr[base] + rest * (arr[base + 1] - arr[base]);
     }
     return arr[base];
+  }
+
+  public addLifeEvent(newEvent: LifeEvent): void {
+    this.lifeEvents.push(newEvent);
+  }
+
+  public removeLifeEvent(index: number): void {
+    if (index >= 0 && index < this.lifeEvents.length) {
+      this.lifeEvents.splice(index, 1);
+    }
+  }
+
+  public onAddLifeEvent(): void {
+    if (this.newEventName && this.newEventYear > 0 && this.newEventCost > 0) {
+      const newEvent: LifeEvent = {
+        name: this.newEventName,
+        year: this.newEventYear,
+        cost: this.newEventCost
+      };
+      this.addLifeEvent(newEvent);
+      // Reset form fields
+      this.newEventName = '';
+      this.newEventYear = 0;
+      this.newEventCost = 0;
+    } else {
+      // Basic validation feedback, could be more sophisticated
+      console.warn('Please fill all life event fields with valid values.');
+    }
   }
 }
