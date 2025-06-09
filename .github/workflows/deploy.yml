@@ -115,5 +115,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
-              body: `🚀 PR Preview available at: [${previewUrl}](${previewUrl})`)};
+              body: `🚀 PR Preview available at: [${previewUrl}](${previewUrl})`});
             
