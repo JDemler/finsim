@@ -4,11 +4,13 @@ on:
   push:
     branches:
       - main  # or your default branch name
+  pull_request: {}
 
 permissions:
   contents: read
   pages: write
   id-token: write
+  pull-requests: write # Added this line
 
 
 concurrency:
@@ -17,6 +19,7 @@ concurrency:
 
 jobs:
   build-and-deploy:
+    id: build_and_deploy_job # Add id here
     runs-on: ubuntu-latest
 
     steps:
@@ -37,14 +40,24 @@ jobs:
 
       - name: Build
         working-directory: planner
-        run: npm run build -- --base-href=/finsim/
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            npm run build -- --base-href=/finsim/pr/${{ github.event.number }}/
+          else
+            npm run build -- --base-href=/finsim/
+          fi
         # Replace 'planner' with your repository name
 
 
       - name: Prepare deployment
         run: |
-          mkdir -p ./deploy
-          cp -r planner/dist/planner/browser/* ./deploy/
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            mkdir -p ./deploy/pr/${{ github.event.number }}
+            cp -r planner/dist/planner/browser/* ./deploy/pr/${{ github.event.number }}/
+          else
+            mkdir -p ./deploy
+            cp -r planner/dist/planner/browser/* ./deploy/
+          fi
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -54,3 +67,25 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  comment-pr-preview-link:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository # Only run for PRs from the same repo
+    needs: build_and_deploy_job
+    steps:
+      - name: Comment PR Preview Link
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = context.issue.number;
+            const repoName = 'finsim'; // As per existing base-href
+            const previewUrl = `https://${{ github.repository_owner }}.github.io/${repoName}/pr/${prNumber}/`;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `🚀 PR Preview available at: [${previewUrl}](${previewUrl})
+
+Action run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`
+            });
